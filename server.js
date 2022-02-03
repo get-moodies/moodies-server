@@ -15,9 +15,14 @@ const {
     edit,
     delOne, 
     compare, 
-    getOnePublic,
     auhtenticateToken,
-    getPublicProfile
+    getPublicProfile,
+    getMovies,
+    addMovie,
+    getWatchlist,
+    editWatchlist,
+    getBlacklist,
+    editBlacklist
     } = require('./controllers')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -39,7 +44,15 @@ server.route("/users/:userName")
     //.put(edit)
     .delete(delOne)
 
-    server.route("/profiles/:userName")
+server.route("/users/:userName/watchlist")
+    .get(auhtenticateToken,getWatchlist)
+    .put(auhtenticateToken,editWatchlist)
+
+server.route("/users/:userName/blacklist")
+    .get(auhtenticateToken,getBlacklist)
+    .put(auhtenticateToken,editBlacklist)
+
+server.route("/profiles/:userName")
     .delete(getPublicProfile)
 
 
@@ -49,9 +62,13 @@ server.route("/login")
 server.route("/profile/:userName")
 .get(getPublicProfile)
 
+server.route("/movies")
+    .get( getMovies )
+    .post( addMovie)
+
 
 server.listen(PORT, () =>
-  console.log(`Moodies server running at ${PORT}`)
+    console.log(`Moodies server running at ${PORT}`)
 );
 
 

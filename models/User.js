@@ -30,7 +30,12 @@ const User = new Schema({
     admin: { 
         type: Boolean,
         default: false
-    }
+    },
+    watchlist: [{type: String}],
+    blacklist: [{type: String}],
+    privateLists: [{type: String}],
+    publicLists: [{type: String}]
+
 })
 
 module.exports = mongoose.model('User',User)
