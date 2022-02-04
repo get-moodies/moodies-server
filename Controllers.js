@@ -7,8 +7,8 @@ const landing = (req, res) => res.send(
     `<h1>Welcome to the moodies server</h1><br/>
     <p>Check out our neat API's:</p>
     <ul>
-    <li >for movies @ <a href="http://localhost:4000/movies" className="h">/movies</a> , and </li>
-    <li >for users @ <a href="http://localhost:4000/users"> /users </a></li>
+    <li >for movies @ <a href="https://get-moodies.herokuapp.com/movies" className="h">/movies</a> , and </li>
+    <li >for users @ <a href="https://get-moodies.herokuapp.com/users"> /users </a></li>
     </ul>
   `)
 
