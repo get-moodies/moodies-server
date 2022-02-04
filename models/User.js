@@ -14,7 +14,10 @@ const User = new Schema({
         required:[true, 'Please, add a (valid) email'],
         unique:[true, 'This email owns an account already'],
         match:[/^([a-zA-Z0-9_!@#$%^&*()\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/,
-                'Please, check and give us a valid email format']
+                'Please, check and give us a valid email format'],
+        select: false
+
+                    
     },
     
     magicword: {
@@ -29,11 +32,18 @@ const User = new Schema({
 
     admin: { 
         type: Boolean,
-        default: false
+        default: false,
+        select: false
     },
-    watchlist: [{type: String}],
-    blacklist: [{type: String}],
-    privateLists: [{type: String}],
+    watchlist: {
+        type: [{type: String}], 
+        select: false},
+    blacklist: {
+        type: [{type: String}], 
+        select: false},
+    privateLists: {
+        type: [{type: String}], 
+        select: false},
     publicLists: [{type: String}]
 
 })
