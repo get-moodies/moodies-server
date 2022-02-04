@@ -25,7 +25,7 @@ const {
     //movies
     getMovies,
     addMovie
-    } = require('./controllers.js')
+    } = require('./Controllers.js')
 
 const {
     //playlist
@@ -38,7 +38,7 @@ const {
     getOnePlaylist,
     deletePlaylist,
     editPlaylist
-} = require('./controllers.js')
+} = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
 server.use(cors(), express.urlencoded({ extended: false }), express.json())
