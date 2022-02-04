@@ -3,7 +3,8 @@
 /node_modules
 /.pnp
 .pnp.js
-
+node_modules
+node_modules/
 
 # misc
 .DS_Store
