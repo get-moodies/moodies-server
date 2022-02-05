@@ -17,8 +17,8 @@ const landing = (req, res) => res.send(
 
 const getAll = (req,res) => {
     User.find({})
-    .then((result) => res.send(result))
-    .catch((e) => res.send(e.message))
+    .then((result) => res.status(200).json(result))
+    .catch((e) => res.status(500).send(e.message))
 }
 const addUser = async (req, res) => {
     const regex_email = /^([a-zA-Z0-9_!@#$%^&*()\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$/
@@ -61,10 +61,10 @@ const addUser = async (req, res) => {
         email: req.body.email,
         admin: req.body.admin
         })
-        .then((result) => res.send(result)) 
+        .then((result) => res.status(201).json(result)) 
     })
     .catch((e) => {
-        res.status(500).send()
+        res.status(400).json()
         console.log(e)
     })
 }
@@ -72,12 +72,13 @@ const addUser = async (req, res) => {
 const getOne = (req, res) => {
     req.user.userName === req.params.userName ?
         User.findOne( { userName: req.params.userName })
-        .then((result) => res.send(result))
+        .select('userName email watchlist blacklist privateLists publicLists')
+        .then((result) => res.status(200).json(result))
         .catch((e) => {
         console.log(e);
-        res.send({ Error});
+        res.send("error");
         }) 
-        : res.json({status: "401", error:"Not Authorized"})
+        : res.status(401).json({status: "401", error:"Not Authorized"})
 }
 
 const edit = async (req, res) => {
@@ -86,16 +87,16 @@ const edit = async (req, res) => {
         .findOne( { userName: req.body.userName })
         .select("userName")
         .catch((e)=>{console.log(e)})
-    console.log(req.body)
+
     if(existsUser){
-        res.json({
+        res.status(400).json({
             error:"Sorry! This user\'s name is not available"
         })
         return
     }
     
     if(!req.body.userName )    {
-        res.json({
+        res.status(400).json({
             error:"Plase, fill out all fields"
         })
         return
@@ -103,33 +104,33 @@ const edit = async (req, res) => {
     
     User.findOne({ userName: req.params.userName })
             .then((user) => {
-                console.log(user)
                 user.userName = req.body.userName
                 user.privateLists = req.body.privateLists
-                //res.json(result)
                 return user.save()
             })
-            .then((updatedUser)=> res.json(updatedUser))
+            .then((updatedUser)=> res.status(201).json(updatedUser))
             .catch((e) =>  {
                 console.log(e)
-                res.status(500).send() 
+                res.status(500).json({
+                    error:"Error"
+                }) 
             }) 
 }
 
 const delOne = (req, res) => {
     User.findOneAndDelete( { userName: req.params.userName })
         .then((result) => {
-        res.send(`${req.params.userName}'s account deleted`)})
+        res.status(200).json(result)})
         .catch((e) => {
         console.log(e);
-        res.send({ Error });
+        res.status(500).json({error: "Error"}) 
         });
 }
 
 const compare = async (req,res) => {    
 
     if(!req.body.userName || !req.body.magicword )    {
-        res.json({
+        res.status(400).json({
             error:"Plase, fill out all fields"
         })
         return
@@ -138,21 +139,21 @@ const compare = async (req,res) => {
     const matchedPassword = await bcrypt.compare(req.body.magicword, magicword )
     
     if(!matchedPassword) {
-        res.status(403).send("Check your data!")
+        res.status(403).json({error: "Check your data!"})
         return
     }
 
     const token = jwt.sign({ userName: req.body.userName}, process.env.JWT_SECRET);
 
-    res.json({ success: true, token })
+    res.status(200).json({ success: true, token })
 }
 
 const getPublicProfile = (req, res) => {
     User.findOne( { userName: req.params.userName })
-        .then((result) => res.send(result))
+        .then((result) => res.status(200).json(result))
         .catch((e) => {
         console.log(e);
-        res.send({ Error});
+        res.status(500).json("error: Error") 
         })
     }
 
@@ -184,9 +185,9 @@ const Playlist =  require('./models/Playlist.js')
 
 const getWatchlist = (req,res) => {
     req.user.userName === req.params.userName ?
-        User.findOne( { userName: req.params.userName }).select('watchlist -_id')
-        .then((result) => {
-        res.send(`${req.params.userName}'s list: ${result}`)})
+        User.findOne( { userName: req.params.userName })
+        .select('watchlist')
+        .then((result) => res.json(result))
         .catch((e) => {
         console.log(e);
         res.send({ Error });
@@ -194,9 +195,9 @@ const getWatchlist = (req,res) => {
         : res.json({status: "401", error:"Not Authorized"})
 }
 
-const editWatchlist =  (req, res) => {
+const editWatchlist = (req, res) => {
     req.user.userName === req.params.userName ?
-        User.findOne({ userName: req.params.userName })
+        User.findOne({ userName: req.params.userName }).select('watchlist')
             .then((user) => {
                 user.watchlist = req.body.watchlist 
                 return user.save()
@@ -204,6 +205,7 @@ const editWatchlist =  (req, res) => {
             .then((result) => {res.json(result)})
             : res.json({status: "401", error:"Not Authorized"})
     }
+
 
 const getBlacklist = (req,res) => {
     req.user.userName === req.params.userName ?

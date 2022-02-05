@@ -71,8 +71,8 @@ server.route("/profile/:userName")
 
 server.route("/users/:userName")
     .get(auhtenticateToken,getOne)
-    .put(edit)
-    .delete(auhtenticateToken,delOne)
+    .put(auhtenticateToken,verifyReqVsParamUser, edit)
+    .delete(auhtenticateToken,verifyReqVsParamUser,delOne)
 
 
 // -------- Playlist Routes
