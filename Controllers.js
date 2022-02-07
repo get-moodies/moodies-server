@@ -394,7 +394,7 @@ const addMovie = (req, res) => {
         .then((result) => res.send(result)) 
 }
 
-const ListComplete = async (req,res) => {    
+const getListComplete = async (req,res) => {    
 
     let movieIds = ['']
 
@@ -417,7 +417,6 @@ const ListComplete = async (req,res) => {
                 // result.find(isCherries)
                 // result.find(isCherries(id))
                 // console.log("busca uno",result.find(isCherries('512195')))
-
                 function isCherries (index, object){
                 return (object) => {return object.movie_id === index }
                 }
@@ -433,49 +432,53 @@ const ListComplete = async (req,res) => {
     })
 }
 
-const getPlaylistsComplete = async (req,res) => {    
+const getAllListsComplete = async (req,res) => {    
 
-    let movieIds = ['']
+    let userInfo = ['']
 
-    req.user.userName === req.params.userName ?
     User.findOne( { userName: req.params.userName })
         .select('watchlist blacklist privateLists publicLists')
-        .then((result) => {
-            res.json({status: "401", result:result})})
+        .then((info) => {
+            userInfo = info
+            const privatePlaylists =  info.privateLists
+            const publicPlaylists = info.publicLists
+            // console.log("lists",privatePlaylists,publicPlaylists)
+            Playlist.find({})
+                .then( async (playlists) => {
+
+                const newPrivatePlaylists = await Playlist.find({ '_id': { $in: privatePlaylists } });
+                const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+
+                res.json({...userInfo._doc,["private"]: newPrivatePlaylists,["public"]: newPublicPlaylists})
+        })
         .catch((e) => {
             console.log(e);
             res.send({ Error });
         })
-        : res.json({status: "401", error:"Not Authorized"})
+ })
+}
 
+const getPublicListComplete = async (req,res) => {    
 
-    Playlist.findById( req.params.playlist_id )
-    .then((list) => {
-        // console.log(list.movies)
-        movieIds = list
-        Movie.find({})
-            .then((result) => {
-                // console.log("inside movie find")
-                // function isCherries (object) {
-                //         return object.movie_id === '512195'
-                //         }
-                // result.find(isCherries)
-                // result.find(isCherries(id))
-                // console.log("busca uno",result.find(isCherries('512195')))
+    let userInfo = ['']
 
-                function isCherries (index, object){
-                return (object) => {return object.movie_id === index }
-                }
-                const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
-                    //console.log("new arrray",{...list._doc})
-                    // const moviesDetailed =  idToObject(['512195'],result)
-                    // console.log("details", moviesDetailed)
+    User.findOne( { userName: req.params.userName })
+        .select('publicLists')
+        .then((info) => {
+            userInfo = info
+            const publicPlaylists = info.publicLists
+            Playlist.find({})
+                .then( async (playlists) => {
 
-                const listComplete = {...list._doc, ["movies_full"]:movies} 
-                    res.json(listComplete)
-            })
-    
-    })
+                const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+
+                res.json({...userInfo._doc,["public"]: newPublicPlaylists})
+        })
+        .catch((e) => {
+            console.log(e);
+            res.send({ Error });
+        })
+ })
 }
 
 
@@ -509,5 +512,7 @@ module.exports = {
     deletePlaylist,
     editPlaylist,
     getOnePlaylist,
-    ListComplete
+    getListComplete,
+    getAllListsComplete,
+    getPublicListComplete
 }

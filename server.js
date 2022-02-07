@@ -38,7 +38,9 @@ const {
     getOnePlaylist,
     deletePlaylist,
     editPlaylist,
-    ListComplete
+    getListComplete,
+    getAllListsComplete,
+    getPublicListComplete
 } = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -87,15 +89,23 @@ server.route("/users/:userName/blacklist")
     .put(auhtenticateToken,editBlacklist)
 
 server.route("/users/:userName/playlists")
-    .get(auhtenticateToken, getAllUserPlaylists)
+    .get(auhtenticateToken, getAllListsComplete)
     .post(auhtenticateToken, verifyReqVsParamUser, addPlaylist)
 
+
+    // getAllUserPlaylists
 // server.route("/users/:userName/playlists/:playlist_id")
 //     .get(auhtenticateToken, verifyReqVsParamUser, getOnePlaylist)
 
 
+
 server.route("/users/:userName/playlists/:playlist_id")
-    .get( ListComplete )
+    .get( getListComplete )
+    .put(auhtenticateToken, verifyReqVsParamUser, editPlaylist)
+    .delete(auhtenticateToken, verifyReqVsParamUser, deletePlaylist)
+
+server.route("/profiles/:userName/playlists")
+    .get(getPublicListComplete )
     .put(auhtenticateToken, verifyReqVsParamUser, editPlaylist)
     .delete(auhtenticateToken, verifyReqVsParamUser, deletePlaylist)
     
