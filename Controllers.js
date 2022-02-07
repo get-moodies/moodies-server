@@ -168,18 +168,6 @@ const verifyReqVsParamUser = (req,res,next) => {
         : res.json({status: "401", error:"Not Authorized"})
 }
 
-// const idToObject = async (array,req,res) => {
-    
-//     const movieCollection = await getMovies(req,res)
-//     console.log(movieCollection) 
-    
-//     // return Array.map( (item) => {
-//     // second;
-//   //})
-// };
-
-
-
 // -------- playlists Controllers
 
 const Playlist =  require('./models/Playlist.js')
