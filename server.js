@@ -37,7 +37,8 @@ const {
     addPlaylist,
     getOnePlaylist,
     deletePlaylist,
-    editPlaylist
+    editPlaylist,
+    ListComplete
 } = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -89,11 +90,15 @@ server.route("/users/:userName/playlists")
     .get(auhtenticateToken, getAllUserPlaylists)
     .post(auhtenticateToken, verifyReqVsParamUser, addPlaylist)
 
+// server.route("/users/:userName/playlists/:playlist_id")
+//     .get(auhtenticateToken, verifyReqVsParamUser, getOnePlaylist)
+
+
 server.route("/users/:userName/playlists/:playlist_id")
-    .get(auhtenticateToken, verifyReqVsParamUser, getOnePlaylist)
+    .get( ListComplete )
     .put(auhtenticateToken, verifyReqVsParamUser, editPlaylist)
     .delete(auhtenticateToken, verifyReqVsParamUser, deletePlaylist)
-
-    server.listen(PORT, () =>
+    
+server.listen(PORT, () =>
     console.log(`Moodies server running at ${PORT}`)
 );

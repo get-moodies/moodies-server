@@ -15,7 +15,6 @@ const Playlist = new Schema({
 
     public: { 
         type: Boolean,
-        select: false,
         default: true
     },
 

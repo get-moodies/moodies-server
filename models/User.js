@@ -42,8 +42,8 @@ const User = new Schema({
     privateLists: {
         type: [{type: String}], 
         select: false},
-    publicLists: [{type: String}]
-
+    publicLists: [{type: String}],
+    info: {type: String}
 })
 
 module.exports = mongoose.model('User',User)

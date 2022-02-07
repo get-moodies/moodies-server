@@ -73,7 +73,7 @@ const getOne = (req, res) => {
     req.user.userName === req.params.userName ?
         User.findOne( { userName: req.params.userName })
         .select('userName email watchlist blacklist privateLists publicLists')
-        .then((result) => res.status(200).json(result))
+        .then((result) => res.status(200).json({result:result,status:200}))
         .catch((e) => {
         console.log(e);
         res.send("error");
@@ -82,30 +82,17 @@ const getOne = (req, res) => {
 }
 
 const edit = async (req, res) => {
-
-    const existsUser = await User
-        .findOne( { userName: req.body.userName })
-        .select("userName")
-        .catch((e)=>{console.log(e)})
-
-    if(existsUser){
-        res.status(400).json({
-            error:"Sorry! This user\'s name is not available"
-        })
-        return
-    }
     
-    if(!req.body.userName )    {
+    if(!req.body.info )    {
         res.status(400).json({
             error:"Plase, fill out all fields"
         })
         return
     }
-    
+
     User.findOne({ userName: req.params.userName })
             .then((user) => {
-                user.userName = req.body.userName
-                user.privateLists = req.body.privateLists
+                user.info = req.body.info
                 return user.save()
             })
             .then((updatedUser)=> res.status(201).json(updatedUser))
@@ -131,6 +118,7 @@ const compare = async (req,res) => {
 
     if(!req.body.userName || !req.body.magicword )    {
         res.status(400).json({
+            status:400,
             error:"Plase, fill out all fields"
         })
         return
@@ -139,13 +127,13 @@ const compare = async (req,res) => {
     const matchedPassword = await bcrypt.compare(req.body.magicword, magicword )
     
     if(!matchedPassword) {
-        res.status(403).json({error: "Check your data!"})
+        res.status(403).json({status:403,error: "Check your data!"})
         return
     }
 
     const token = jwt.sign({ userName: req.body.userName}, process.env.JWT_SECRET);
 
-    res.status(200).json({ success: true, token })
+    res.status(200).json({ status:200,success: true, token })
 }
 
 const getPublicProfile = (req, res) => {
@@ -179,6 +167,19 @@ const verifyReqVsParamUser = (req,res,next) => {
         next() 
         : res.json({status: "401", error:"Not Authorized"})
 }
+
+// const idToObject = async (array,req,res) => {
+    
+//     const movieCollection = await getMovies(req,res)
+//     console.log(movieCollection) 
+    
+//     // return Array.map( (item) => {
+//     // second;
+//   //})
+// };
+
+
+
 // -------- playlists Controllers
 
 const Playlist =  require('./models/Playlist.js')
@@ -235,7 +236,7 @@ const getAllUserPlaylists = (req,res) => {
             User.findOne( { userName: req.params.userName })
                 .select('watchlist blacklist privateLists publicLists')
                 .then((result) => {
-                    res.json(result)})
+                    res.json({status: "401", result:result})})
                 .catch((e) => {
                     console.log(e);
                     res.send({ Error });
@@ -244,8 +245,20 @@ const getAllUserPlaylists = (req,res) => {
     }
 
 
-
 const addPlaylist = (req, res) => {
+    
+const updateList = (public, user,result) => {
+    if (public) {     
+        console.log( "adding to public lists",[...user.publicLists, result._id])
+        user.publicLists = [...user.publicLists, result._id]
+        return    
+    }
+
+    console.log( "adding to private lists")
+    user.privateLists = [...user.privateLists, result._id]
+    return
+} 
+
     Playlist.create( {
         name: req.body.name,
         public: req.body.public,
@@ -257,12 +270,12 @@ const addPlaylist = (req, res) => {
         User.findOne({ userName: result.editRight[0] })
             .select("+privateLists")
             .then((user) => {
-                console.log( [...user.privateLists, result.name],result)
-                user.privateLists = [...user.privateLists, result._id]
+                updateList(req.body.public,user,result)
                 return user.save()
             })
             .then((updatedUser) => {
-                res.status(200).send(updatedUser);
+                res.status(200).json({status:200, result:{addedList: result, updatedUser: updatedUser}});
+               // console.log("upadted user", updatedUser)
             })
             .catch((e) =>  {
                             console.log(e)
@@ -273,23 +286,6 @@ const addPlaylist = (req, res) => {
         console.log(e)
         res.status(500).send() 
     })
-        
-        
-    // const addedTo = result.editRight.map( (owner) => 
-    //         User.findOne({ userName: owner })
-    //         .then((user) => {
-    //             user.privateLists = [...user.privateLists, result.name]
-    //             return user.save()
-    //         })
-    //         .then((updatedUser)=> console.log(updatedUser))
-    //         .catch((e) =>  {
-    //             console.log(e)
-    //             res.status(500).send() 
-        //     }) 
-        // ) 
-    //     return addedTo
-    // })
-   // .then((result) => res.json(result)) 
 }
 
 const getOnePlaylist = (req, res) => {
@@ -299,10 +295,29 @@ const getOnePlaylist = (req, res) => {
 }
 
 const editPlaylist = (req, res) => {
+
+let publicState = false
+
+const updateList = (public, user,result) => {
+    if (public) {     
+        console.log( "changing to public lists",[...user.publicLists, result._id])
+        user.publicLists = [...user.publicLists, result._id]
+        user.privateLists = user.privateLists
+            .filter((list)=> list != result._id)
+        return    
+    }
+
+    console.log( "changing to private lists")
+    user.privateLists = [...user.privateLists, result._id]
+    user.publicLists = user.publicLists
+        .filter((list)=> list != result._id)
+    return    
+} 
+
     Playlist.findById( req.params.playlist_id )
         .then( (list) => {
+            publicState = list.public
             const { name, public, movies, tags, editRight } = req.body
-            
             list.name = name 
             list.public = public 
             list.movies = movies 
@@ -311,8 +326,30 @@ const editPlaylist = (req, res) => {
 
             return list.save()
         })
-        .then((result) => res.json(result))
-        .catch((e) => console.log(e))
+        .then((result) => {
+            console.log(publicState !== req.body.public)
+            if ((publicState !== req.body.public) && !result.editRight[1] ){
+                User.findOne({ userName: result.editRight[0] })
+                    .select("+privateLists")
+                    .then((user) => {
+                        updateList(req.body.public,user,result)
+                        return user.save()
+                    })
+                    .then((updatedUser) => {
+                        res.status(200).json({status:200, result:{edditedList: result, updatedUser: updatedUser}});
+                    })
+                    .catch((e) =>  {
+                                    console.log(e)
+                                    res.status(500).send() 
+                    })
+            }
+            // if ((publicState !== req.body.public) && list.editRight[1] ){res.status(500).json({error:"Can not change Public status of a collective List"}) }
+            else {res.status(200).json({status:200, result:result})}
+        })
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
+        })
 }
 
 const deletePlaylist = (req, res) => {
@@ -325,15 +362,28 @@ const deletePlaylist = (req, res) => {
 
 
 
+
 // -------- Movie Controllers
 
 const Movie =  require('./models/Movie.js')
 
 const getMovies = (req,res) => {
     Movie.find({})
-    .then((result) => res.send(result))
+    .then((result) => res.json({status:200,result:result}))
     .catch((e) => res.send(e.message))
 }
+
+// const getOneMovie = (req, res) => {
+//     req.user.userName === req.params.userName ?
+//         User.findOne( { userName: req.params.userName })
+//         .select('userName email watchlist blacklist privateLists publicLists')
+//         .then((result) => res.status(200).json({result:result,status:200}))
+//         .catch((e) => {
+//         console.log(e);
+//         res.send("error");
+//         }) 
+//         : res.status(401).json({status: "401", error:"Not Authorized"})
+// }
 
 const addMovie = (req, res) => {
     Movie.create({
@@ -343,6 +393,95 @@ const addMovie = (req, res) => {
         })
         .then((result) => res.send(result)) 
 }
+
+const ListComplete = async (req,res) => {    
+
+    let movieIds = ['']
+
+    // const idToObject = (array, movieCollection) => {
+    // function isCherries (index,object){
+    //         return (object) => {return object.movie_id === index }
+    //         }
+    // return array.map((id) => { movieCollection.find( isCherries(id) )})
+    // }
+    Playlist.findById( req.params.playlist_id )
+    .then((list) => {
+        // console.log(list.movies)
+        movieIds = list
+        Movie.find({})
+            .then((result) => {
+                // console.log("inside movie find")
+                // function isCherries (object) {
+                //         return object.movie_id === '512195'
+                //         }
+                // result.find(isCherries)
+                // result.find(isCherries(id))
+                // console.log("busca uno",result.find(isCherries('512195')))
+
+                function isCherries (index, object){
+                return (object) => {return object.movie_id === index }
+                }
+                const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
+                    //console.log("new arrray",{...list._doc})
+                    // const moviesDetailed =  idToObject(['512195'],result)
+                    // console.log("details", moviesDetailed)
+
+                const listComplete = {...list._doc, ["movies_full"]:movies} 
+                    res.json(listComplete)
+            })
+    
+    })
+}
+
+const getPlaylistsComplete = async (req,res) => {    
+
+    let movieIds = ['']
+
+    req.user.userName === req.params.userName ?
+    User.findOne( { userName: req.params.userName })
+        .select('watchlist blacklist privateLists publicLists')
+        .then((result) => {
+            res.json({status: "401", result:result})})
+        .catch((e) => {
+            console.log(e);
+            res.send({ Error });
+        })
+        : res.json({status: "401", error:"Not Authorized"})
+
+
+    Playlist.findById( req.params.playlist_id )
+    .then((list) => {
+        // console.log(list.movies)
+        movieIds = list
+        Movie.find({})
+            .then((result) => {
+                // console.log("inside movie find")
+                // function isCherries (object) {
+                //         return object.movie_id === '512195'
+                //         }
+                // result.find(isCherries)
+                // result.find(isCherries(id))
+                // console.log("busca uno",result.find(isCherries('512195')))
+
+                function isCherries (index, object){
+                return (object) => {return object.movie_id === index }
+                }
+                const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
+                    //console.log("new arrray",{...list._doc})
+                    // const moviesDetailed =  idToObject(['512195'],result)
+                    // console.log("details", moviesDetailed)
+
+                const listComplete = {...list._doc, ["movies_full"]:movies} 
+                    res.json(listComplete)
+            })
+    
+    })
+}
+
+
+
+
+
 
 module.exports = {
     //Users
@@ -369,5 +508,6 @@ module.exports = {
     addPlaylist,
     deletePlaylist,
     editPlaylist,
-    getOnePlaylist
+    getOnePlaylist,
+    ListComplete
 }
