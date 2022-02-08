@@ -40,7 +40,9 @@ const {
     editPlaylist,
     getListComplete,
     getAllListsComplete,
-    getPublicListComplete
+    getPublicListComplete,
+    getPublicLists,
+    getTags
 } = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -98,7 +100,6 @@ server.route("/users/:userName/playlists")
 //     .get(auhtenticateToken, verifyReqVsParamUser, getOnePlaylist)
 
 
-
 server.route("/users/:userName/playlists/:playlist_id")
     .get( getListComplete )
     .put(auhtenticateToken, verifyReqVsParamUser, editPlaylist)
@@ -107,7 +108,14 @@ server.route("/users/:userName/playlists/:playlist_id")
 server.route("/profiles/:userName/playlists")
     .get(getPublicListComplete )
     .put(auhtenticateToken, verifyReqVsParamUser, editPlaylist)
-    .delete(auhtenticateToken, verifyReqVsParamUser, deletePlaylist)
+    //.delete(auhtenticateToken, verifyReqVsParamUser, deletePlaylist)
+
+server.route("/playlists/getpublic")
+    .get( getPublicLists )
+
+server.route("/playlists/bytag/:tag")
+    .get( getTags )       
+
     
 server.listen(PORT, () =>
     console.log(`Moodies server running at ${PORT}`)

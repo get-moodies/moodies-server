@@ -72,7 +72,7 @@ const addUser = async (req, res) => {
 const getOne = (req, res) => {
     req.user.userName === req.params.userName ?
         User.findOne( { userName: req.params.userName })
-        .select('userName email watchlist blacklist privateLists publicLists')
+        .select('userName email watchlist blacklist privateLists publicLists info')
         .then((result) => res.status(200).json({result:result,status:200}))
         .catch((e) => {
         console.log(e);
@@ -354,6 +354,7 @@ const deletePlaylist = (req, res) => {
 // -------- Movie Controllers
 
 const Movie =  require('./models/Movie.js')
+const { json } = require('express')
 
 const getMovies = (req,res) => {
     Movie.find({})
@@ -382,101 +383,87 @@ const addMovie = (req, res) => {
         .then((result) => res.send(result)) 
 }
 
-const getListComplete = async (req,res) => {    
 
+///// Get Full Info Lists
+
+
+const getListComplete = async (req,res) => {    
     let movieIds = ['']
 
-    // const idToObject = (array, movieCollection) => {
-    // function isCherries (index,object){
-    //         return (object) => {return object.movie_id === index }
-    //         }
-    // return array.map((id) => { movieCollection.find( isCherries(id) )})
-    // }
     Playlist.findById( req.params.playlist_id )
     .then((list) => {
-        // console.log(list.movies)
         movieIds = list
         Movie.find({})
             .then((result) => {
-                // console.log("inside movie find")
-                // function isCherries (object) {
-                //         return object.movie_id === '512195'
-                //         }
-                // result.find(isCherries)
-                // result.find(isCherries(id))
-                // console.log("busca uno",result.find(isCherries('512195')))
                 function isCherries (index, object){
                 return (object) => {return object.movie_id === index }
                 }
                 const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
-                    //console.log("new arrray",{...list._doc})
-                    // const moviesDetailed =  idToObject(['512195'],result)
-                    // console.log("details", moviesDetailed)
-
                 const listComplete = {...list._doc, ["movies_full"]:movies} 
                     res.json(listComplete)
             })
-    
     })
 }
 
-
-
-
-///// Get complete Lists 
-
 const getAllListsComplete = async (req,res) => {    
-
-    let userInfo = ['']
 
     User.findOne( { userName: req.params.userName })
         .select('watchlist blacklist privateLists publicLists')
-        .then((info) => {
-            userInfo = info
+        .then( async (info) => {
             const privatePlaylists =  info.privateLists
             const publicPlaylists = info.publicLists
-            // console.log("lists",privatePlaylists,publicPlaylists)
-            Playlist.find({})
-                .then( async (playlists) => {
-
-                const newPrivatePlaylists = await Playlist.find({ '_id': { $in: privatePlaylists } });
-                const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
-
-                res.json({...userInfo._doc,["private"]: newPrivatePlaylists,["public"]: newPublicPlaylists})
+            const newPrivatePlaylists = await Playlist.find({ '_id': { $in: privatePlaylists } });
+            const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["private"]: newPrivatePlaylists,["public"]: newPublicPlaylists})
         })
         .catch((e) => {
             console.log(e);
             res.send({ Error });
         })
- })
 }
 
 const getPublicListComplete = async (req,res) => {    
 
-    let userInfo = ['']
-
     User.findOne( { userName: req.params.userName })
         .select('publicLists')
-        .then((info) => {
-            userInfo = info
+        .then(async (info) => {          
             const publicPlaylists = info.publicLists
-            Playlist.find({})
-                .then( async (playlists) => {
-
-                const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
-
-                res.json({...userInfo._doc,["public"]: newPublicPlaylists})
+            const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["public"]: newPublicPlaylists})
         })
-        .catch((e) => {
-            console.log(e);
-            res.send({ Error });
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
         })
- })
 }
 
+const getPublicLists =  (req,res) => {    
 
+    Playlist.find({public : true })
+            .then(async (info) => {
+                const publicMovies = info[0].movies
+                const newPublicMovies = await Movie.find({ 'movie_id': { $in: publicMovies } });
+                res.json({...info[0]._doc,["movies_full"]: newPublicMovies})
+                })
+            .catch((e) =>  {
+                console.log(e)
+                res.status(500).send() 
+            })
+            
+}
 
+const getTags = (req,res) => {
+    const tags = req.params.tag.split('%')
+    console.log( tags)
+    
+    Playlist.find({ tags: { $in: tags } })
+            .then((result) => res.json(result))
+            .catch((e) =>  {
+                console.log(e)
+                res.status(500).send() 
+            })
 
+}
 
 
 module.exports = {
@@ -507,5 +494,7 @@ module.exports = {
     getOnePlaylist,
     getListComplete,
     getAllListsComplete,
-    getPublicListComplete
+    getPublicListComplete,
+    getPublicLists,
+    getTags
 }
