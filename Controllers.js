@@ -462,7 +462,7 @@ const getTags = (req,res) => {
     console.log( tags)
     
     Playlist.find({ tags: { $in: tags } })
-            .then((result) => res.json(result))
+            .then((result) => res.json({status:200,result:result}))
             .catch((e) =>  {
                 console.log(e)
                 res.status(500).send() 
