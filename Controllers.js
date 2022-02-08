@@ -72,7 +72,7 @@ const addUser = async (req, res) => {
 const getOne = (req, res) => {
     req.user.userName === req.params.userName ?
         User.findOne( { userName: req.params.userName })
-        .select('userName email watchlist blacklist privateLists publicLists info')
+        .select('userName email watchlist blacklist privateLists publicLists info image')
         .then((result) => res.status(200).json({result:result,status:200}))
         .catch((e) => {
         console.log(e);
@@ -93,6 +93,7 @@ const edit = async (req, res) => {
     User.findOne({ userName: req.params.userName })
             .then((user) => {
                 user.info = req.body.info
+                user.image = req.body.image
                 return user.save()
             })
             .then((updatedUser)=> res.status(201).json(updatedUser))
@@ -385,25 +386,37 @@ const addMovie = (req, res) => {
 
 
 ///// Get Full Info Lists
-
-
 const getListComplete = async (req,res) => {    
-    let movieIds = ['']
 
     Playlist.findById( req.params.playlist_id )
-    .then((list) => {
-        movieIds = list
-        Movie.find({})
-            .then((result) => {
-                function isCherries (index, object){
-                return (object) => {return object.movie_id === index }
-                }
-                const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
-                const listComplete = {...list._doc, ["movies_full"]:movies} 
-                    res.json(listComplete)
-            })
-    })
+        .then(async (info) => {          
+            const publicPlaylists = info.movies
+            const newPublicPlaylists = await Movie.find({ 'movie_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["public"]: newPublicPlaylists})
+        })
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
+        })
 }
+
+// const getListComplete = async (req,res) => {    
+//     let movieIds = ['']
+
+//     Playlist.findById( req.params.playlist_id )
+//     .then((list) => {
+//         movieIds = list
+//         Movie.find({})
+//             .then((result) => {
+//                 function isCherries (index, object){
+//                 return (object) => {return object.movie_id === index }
+//                 }
+//                 const movies = movieIds.movies.map((id)=> result.find(isCherries(id)) )
+//                 const listComplete = {...list._doc, ["movies_full"]:movies} 
+//                     res.json(listComplete)
+//             })
+//     })
+// }
 
 const getAllListsComplete = async (req,res) => {    
 
@@ -458,7 +471,7 @@ const getPublicLists =  (req,res) => {
 }
 
 const getTags = (req,res) => {
-    const tags = req.params.tag.split('%')
+    const tags = req.params.tag.split('&')
     console.log( tags)
     
     Playlist.find({ tags: { $in: tags } })

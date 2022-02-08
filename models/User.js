@@ -43,7 +43,8 @@ const User = new Schema({
         type: [{type: String}], 
         select: false},
     publicLists: [{type: String}],
-    info: {type: String}
+    info: {type: String},
+    image: {type: String} 
 })
 
 module.exports = mongoose.model('User',User)
