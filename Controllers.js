@@ -441,13 +441,18 @@ const getPublicLists =  (req,res) => {
 
     Playlist.find({public : true })
             .then(async (info) => {
-                const publicMovies = info[0].movies
-                const newPublicMovies = await Movie.find({ 'movie_id': { $in: publicMovies } });
-                res.json({...info[0]._doc,["movies_full"]: newPublicMovies})
+                const newInfo = await Promise.all( 
+                    info.map( async (list) => {
+                        const publicMovies = list.movies
+                        const newPublicMovies = await Movie.find({ 'movie_id': { $in: publicMovies } });
+                        const getMeOut = {...list._doc,["movies_full"]: newPublicMovies}
+                        return getMeOut
+                    }))      
+                res.json({status:200,result:newInfo})
                 })
-            .catch((e) =>  {
-                console.log(e)
-                res.status(500).send() 
+                .catch((e) =>  {
+                    console.log(e)
+                    res.status(500).send() 
             })
             
 }
