@@ -44,7 +44,8 @@ const {
     getPublicLists,
     getTags,
     getListsMoviesFull,
-    getPrivateListComplete
+    getPrivateListComplete,
+    getPublicMoviesFull
 } = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -124,7 +125,8 @@ server.route("/playlists/getLists")
 server.route("/users/:userName/privateComplete")
     .get( getPrivateListComplete )
 
-    
+server.route("/users/:userName/publicComplete")
+    .get( getPublicMoviesFull )
 
 
     

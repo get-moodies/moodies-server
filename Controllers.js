@@ -578,7 +578,20 @@ const getPrivateListComplete = async (req,res) => {
         })
 }
 
+const getPublicMoviesFull = async (req,res) => {    
 
+    User.findOne( { userName: req.params.userName })
+        .select('publicLists')
+        .then(async (info) => {          
+            const publicPlaylists = info.publicLists
+            const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["public"]: newPublicPlaylists})
+        })
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
+        })
+}
 
 module.exports = {
     //Users
@@ -612,5 +625,6 @@ module.exports = {
     getPublicLists,
     getTags,
     getListsMoviesFull,
-    getPrivateListComplete
+    getPrivateListComplete,
+    getPublicMoviesFull
 }
