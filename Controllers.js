@@ -236,30 +236,36 @@ const getAllUserPlaylists = (req,res) => {
 
 const addPlaylist = (req, res) => {
     
-const updateList = (public, user,result) => {
-    if (public) {     
-        console.log( "adding to public lists",[...user.publicLists, result._id])
-        user.publicLists = [...user.publicLists, result._id]
-        return    
-    }
+// const updateList = (public, user,result) => {
+//     if (public) {     
+//         console.log( "adding to public lists",[...user.publicLists, result._id])
+//         return [...user.publicLists, result._id]
+            
+//     }
 
-    console.log( "adding to private lists")
-    user.privateLists = [...user.privateLists, result._id]
-    return
-} 
+//     console.log( "adding to private lists")
+//     user.privateLists = [...user.privateLists, result._id]
+//     return
+// } 
 
     Playlist.create( {
         name: req.body.name,
         public: req.body.public,
         movies: req.body.movies,
         tags: req.body.tags,
-        editRight: req.params.userName
+        editRight: req.body.editRight
     })
     .then((result) => {
+        console.log("user:",result, result.name, result.public, result.editRight)
         User.findOne({ userName: result.editRight[0] })
-            .select("+privateLists")
+            .select("privateLists publicLists")
             .then((user) => {
-                updateList(req.body.public,user,result)
+                if (req.body.public) {     
+                    console.log( "adding to public lists",[...user.publicLists, result._id])
+                     user.publicLists = [...user.publicLists, result._id]     
+                }
+                else { user.privateLists = [...user.privateLists, result._id]
+                    console.log( "adding to public lists",[...user.publicLists, result._id])}
                 return user.save()
             })
             .then((updatedUser) => {
@@ -341,10 +347,64 @@ const updateList = (public, user,result) => {
         })
 }
 
-const deletePlaylist = (req, res) => {
-    Playlist.findByIdAndDelete(req.params.playlist_id )
-        .then((result) => res.json({status: 200,result}))
-        .catch((e) => console.log(e));
+const deletePlaylist = async (req, res) => {
+
+    // let id = ''
+    // let public = false
+    // let owner = ''
+
+    // Playlist.findByIdAndDelete( req.params.playlist_id )
+    //     .then((result) => { 
+    //         id = result._id
+    //         public = result.body.public
+    //         owner = result.editRight[0]
+    //         res.json({status: 200,result:result})})
+    //     .catch((e) => console.log(e))
+    // findByIdAndDelete( req.params.playlist_id )
+    const result = await Playlist.findById( req.params.playlist_id )
+  
+    let id = result._id
+    let public = result.public
+    let owner = result.editRight[0]
+        
+    console.log( id, public, owner, result)
+
+    const user = await User.findOne({ userName: owner }).select("privateLists publicLists")
+        
+    if (public) {     
+        // console.log( "deleting from public lists",user.publicLists.filter( (list) => list != id),
+        // user.publicLists.filter( (list) => !(list === id)))
+        user.publicLists = user.publicLists.filter( (list) => {return list !== id})
+        console.log("user inside if:", user)
+    } else { 
+        user.privateLists = user.privateLists.filter( (list) => {return list !== id})
+    }
+    console.log("user outside if:", user)
+    res.json(user)
+    // await user.save();
+            
+            // const publicPlaylists = info.publicLists
+            // const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            // res.json({...info._doc,["public"]: newPublicPlaylists})
+         
+
+
+
+        // .then((result) => 
+        // User.findOne({ userName: result.editRight[0] }))
+        //     .select("privateLists publicLists")
+        //     .then((user) => {
+        //         // console.log("result:",result)
+        //         if (result.body.public) {     
+        //             // console.log( "deleting from public lists",user.publicLists.filter( (list) => list != result._id))
+        //              user.publicLists = user.publicLists.filter( (list) => {list !== result._id})
+        //         }
+        //         else { user.privateLists = user.privateLists.filter( (list) => {list !== result._id})
+        // // console.log( "deleting from private lists",user.privateLists.filter( (list) => list != result._id))
+        //             }
+        //         return user.save()   
+        //     })
+           
 }
 
 
@@ -385,7 +445,7 @@ const addMovie = (req, res) => {
 }
 
 
-///// Get Full Info Lists
+/// Get Full Info Lists
 const getListComplete = async (req,res) => {    
 
     Playlist.findById( req.params.playlist_id )
@@ -402,9 +462,10 @@ const getListComplete = async (req,res) => {
 
 // const getListComplete = async (req,res) => {    
 //     let movieIds = ['']
-
+    
 //     Playlist.findById( req.params.playlist_id )
 //     .then((list) => {
+//         console.log(list )
 //         movieIds = list
 //         Movie.find({})
 //             .then((result) => {
