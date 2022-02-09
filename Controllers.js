@@ -439,13 +439,12 @@ const addMovie = (req, res) => {
     Movie.create({
         movie_id: req.body.movie_id,
         data: req.body.movie,
-        tags: req.body.tags,
         })
         .then((result) => res.send(result)) 
 }
+//Lists
 
 
-/// Get Full Info Lists
 const getListComplete = async (req,res) => {    
 
     Playlist.findById( req.params.playlist_id )
@@ -579,6 +578,21 @@ const getPrivateListComplete = async (req,res) => {
 }
 
 const getPublicMoviesFull = async (req,res) => {    
+
+    User.findOne( { userName: req.params.userName })
+        .select('publicLists')
+        .then(async (info) => {          
+            const publicPlaylists = info.publicLists
+            const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["public"]: newPublicPlaylists})
+        })
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
+        })
+}
+
+const ListMovieUser = async (req,res) => {    
 
     User.findOne( { userName: req.params.userName })
         .select('publicLists')
