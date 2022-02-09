@@ -42,7 +42,9 @@ const {
     getAllListsComplete,
     getPublicListComplete,
     getPublicLists,
-    getTags
+    getTags,
+    getListsMoviesFull,
+    getPrivateListComplete
 } = require('./Controllers.js')
 
 //Middleware: Cors & parse application/x-www-form-urlencoded & application/json
@@ -115,6 +117,15 @@ server.route("/playlists/getpublic")
 
 server.route("/playlists/bytag/:tag")
     .get( getTags )       
+
+server.route("/playlists/getLists")
+    .get( getListsMoviesFull )
+
+server.route("/users/:userName/privateComplete")
+    .get( getPrivateListComplete )
+
+    
+
 
     
 server.listen(PORT, () =>

@@ -374,10 +374,10 @@ const deletePlaylist = async (req, res) => {
     if (public) {     
         // console.log( "deleting from public lists",user.publicLists.filter( (list) => list != id),
         // user.publicLists.filter( (list) => !(list === id)))
-        user.publicLists = user.publicLists.filter( (list) => {return list !== id})
+        user.publicLists = user.publicLists.filter( (list) => {return list != id})
         console.log("user inside if:", user)
     } else { 
-        user.privateLists = user.privateLists.filter( (list) => {return list !== id})
+        user.privateLists = user.privateLists.filter( (list) => {return list != id})
     }
     console.log("user outside if:", user)
     res.json(user)
@@ -544,6 +544,41 @@ const getTags = (req,res) => {
 
 }
 
+const getListsMoviesFull =  (req,res) => {    
+
+    Playlist.find({ editRight: { $in: "gerardo" } })
+            .then(async (info) => {
+                const newInfo = await Promise.all( 
+                    info.map( async (list) => {
+                        const publicMovies = list.movies
+                        const newPublicMovies = await Movie.find({ 'movie_id': { $in: publicMovies } });
+                        const getMeOut = {...list._doc,["movies_full"]: newPublicMovies}
+                        return getMeOut
+                    }))      
+                res.json({status:200,result:newInfo})
+                })
+                .catch((e) =>  {
+                    console.log(e)
+                    res.status(500).send() 
+            })
+            
+}
+const getPrivateListComplete = async (req,res) => {    
+
+    User.findOne( { userName: req.params.userName })
+        .select('privateLists')
+        .then(async (info) => {          
+            const publicPlaylists = info.privateLists
+            const newPublicPlaylists = await Playlist.find({ '_id': { $in: publicPlaylists } });
+            res.json({...info._doc,["private"]: newPublicPlaylists})
+        })
+        .catch((e) =>  {
+            console.log(e)
+            res.status(500).send() 
+        })
+}
+
+
 
 module.exports = {
     //Users
@@ -575,5 +610,7 @@ module.exports = {
     getAllListsComplete,
     getPublicListComplete,
     getPublicLists,
-    getTags
+    getTags,
+    getListsMoviesFull,
+    getPrivateListComplete
 }
